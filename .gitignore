@@ -1,5 +1,6 @@
 # Ansible
 inventories/
+.ansible/
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
