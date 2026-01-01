@@ -1,0 +1,56 @@
+---
+- name: "sudo_management | Install sudo"
+  ansible.builtin.apt:
+    name: sudo
+    state: present
+  when: ansible_distribution == "Debian"
+
+- name: "sudo_management | Install sudo"
+  ansible.builtin.dnf:
+    name: sudo
+    state: present
+  when: ansible_distribution == "AlmaLinux"
+
+- name: "sudo_management | Copy sudoers.d files"
+  ansible.builtin.template:
+    src: sudoers.d.j2
+    dest: "/etc/sudoers.d/{{ idx }}0_{{ users_item.name }}"
+    owner: "{{ users_sudo_config_user }}"
+    group: "{{ users_sudo_config_group }}"
+    mode: 0440
+  loop: "{{ users_groups_list }}"
+  loop_control:
+    index_var: idx
+    loop_var: users_item
+  when: users_item.sudo
+
+- name: "sudo_management | Copy sudoers file"
+  ansible.builtin.template:
+    src: "sudoers_{{ ansible_distribution }}.j2"
+    dest: /etc/sudoers
+    owner: "{{ users_sudo_config_user }}"
+    group: "{{ users_sudo_config_group }}"
+    mode: 0400
+
+- name: "sudo_management | Manage special non-sudo users to use commands"
+  ansible.builtin.template:
+    src: sudoers.d.users.j2
+    dest: "/etc/sudoers.d/1{{ idx }}0_{{ users_item.user }}"
+    owner: "{{ users_sudo_config_user }}"
+    group: "{{ users_sudo_config_group }}"
+    mode: 0440
+  loop: "{{ users_special_sudo }}"
+  loop_control:
+    index_var: idx
+    loop_var: users_item
+  when: users_special_sudo is defined and users_special_sudo|length > 0 and users_item.state == "present"
+
+- name: "sudo_management | Remove user sudoers.d files"
+  ansible.builtin.file:
+    path: "/etc/sudoers.d/1{{ idx }}0_{{ users_item.user }}"
+    state: absent
+  loop: "{{ users_special_sudo }}"
+  loop_control:
+    index_var: idx
+    loop_var: users_item
+  when: users_special_sudo is defined and users_special_sudo|length > 0 and users_item.state == "absent"

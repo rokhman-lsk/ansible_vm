@@ -1,0 +1,30 @@
+---
+- name: "users_management | Manage groups"
+  ansible.builtin.group:
+    name: "{{ users_item.name }}"
+    state: "{{ users_item.state }}"
+  loop: "{{ users_groups_list }}"
+  loop_control:
+    loop_var: users_item
+
+- name: "users_management | Manage users"
+  ansible.builtin.user:
+    name: "{{ users_item.name }}"
+    groups: "{{ users_item.groups }}"
+    shell: /bin/bash
+    state: "{{ users_item.state }}"
+  when: users_item.groups in (users_groups_list | map(attribute='name') | list)
+  loop: "{{ users_users_list }}"
+  loop_control:
+    loop_var: users_item
+
+- name: "users_management | Manage users auth keys"
+  ansible.posix.authorized_key:
+    key: "{{ users_item.ssh_keys | join ('\n') }}"
+    user: "{{ users_item.name }}"
+    exclusive: true
+    path: "/home/{{ users_item.name }}/.ssh/authorized_keys"
+  when: users_item.groups in (users_groups_list | map(attribute='name') | list)
+  loop: "{{ users_users_list }}"
+  loop_control:
+    loop_var: users_item

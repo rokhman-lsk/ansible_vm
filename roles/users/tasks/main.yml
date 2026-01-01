@@ -1,0 +1,21 @@
+---
+- name: "Users | users, groups and privileges management"
+  when:
+    - ansible_distribution in supported_distributions
+    - ansible_distribution_major_version | string in supported_distributions[ansible_distribution]
+    - ansible_virtualization_role == "guest"
+  tags: users
+  block:
+    - name: "Users | Include users and groups management tasks"
+      ansible.builtin.include_tasks:
+        file: users_management.yml
+        apply:
+          tags: users_management
+      tags: users_management
+
+    - name: "Users | Include sudo management tasks"
+      ansible.builtin.include_tasks:
+        file: sudo_management.yml
+        apply:
+          tags: sudo_management
+      tags: sudo_management
